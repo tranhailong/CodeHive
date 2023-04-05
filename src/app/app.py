@@ -21,6 +21,10 @@ def handle_pubsub_message():
 
     return f'COMPLETED', 202
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    return 'OK', 200
+
 def handle_errors(status_code, msg):
     print(f'Error: {msg}')
     return f'Bad Request: {msg}', status_code

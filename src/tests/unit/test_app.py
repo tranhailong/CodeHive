@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 from io import StringIO
 
-from src.app.app import app
+from src.app.app import app, handle_errors
 
 
 class TestHandlePubsubMessage(unittest.TestCase):
@@ -16,6 +16,29 @@ class TestHandlePubsubMessage(unittest.TestCase):
 
     def tearDown(self):
         pass
+
+    @patch('sys.stdout', new_callable=StringIO)
+    @patch('src.app.app.hello_world')
+    def test_handle_pubsub_message(self, mock_hello_world, mock_stdout):
+        for key, test in self.test_cases['handle_pubsub_message'].items():
+            self.run_test(key, test, mock_stdout, mock_hello_world)
+        
+    def test_health_check(self):
+        response = self.app.get('/health')
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('OK', response.data.decode('utf-8'))
+    
+    def test_wrong_path(self):
+        response = self.app.get('/abc')
+        self.assertEqual(404, response.status_code)
+        self.assertIn('Not Found', response.data.decode('utf-8'))
+
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_handle_errors(self, mock_stdout):
+        response = handle_errors(400, 'Test error')
+        self.assertEqual('Error: Test error', mock_stdout.getvalue().strip())
+        self.assertEqual(400, response[1])
+        self.assertEqual('Bad Request: Test error', response[0])
 
     def prep_tests(self):
         tests = {}
@@ -49,16 +72,6 @@ class TestHandlePubsubMessage(unittest.TestCase):
         if 'log' in test:
             self.assertIn(test['log'], mock_stdout.getvalue().strip())
             mock_hello_world.assert_called_once()  # assert hello_world() function is called
-
-    @patch('sys.stdout', new_callable=StringIO)
-    @patch('src.app.app.hello_world')
-    def test_handle_pubsub_message(self, mock_hello_world, mock_stdout):
-        for key, test in self.test_cases['handle_pubsub_message'].items():
-            self.run_test(key, test, mock_stdout, mock_hello_world)
-        
-        # TODO add test where the api path is wrong
-
-    #def test_handle_errors(self):   
 
 if __name__ == '__main__':
     unittest.main()
