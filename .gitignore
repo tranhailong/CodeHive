@@ -1,0 +1,7 @@
+.env
+
+# Cache
+src/**/__pycache__/
+
+# IDE, dev environment
+.theia/
